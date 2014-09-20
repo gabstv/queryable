@@ -3,6 +3,7 @@ package queryable
 import (
 	"fmt"
 	"reflect"
+	"time"
 )
 
 type re struct {
@@ -203,6 +204,26 @@ func (q *Queryable) StringT() (string, error) {
 	return "", ne("not a string " + fvv.Kind().String())
 }
 
+func (q *Queryable) TimeT() (time.Time, error) {
+	fvv := fv(q.Raw)
+	switch fvv.Kind() {
+	case reflect.String:
+		t := time.Time{}
+		err := t.UnmarshalText([]byte(fvv.String()))
+		return t, err
+	case reflect.Uint:
+		return time.Unix(int64(fvv.Uint()), 0), nil
+	case reflect.Int:
+		return time.Unix(fvv.Int(), 0), nil
+	case reflect.Struct:
+		t, ok := q.Raw.(time.Time)
+		if ok {
+			return t, nil
+		}
+	}
+	return time.Time{}, ne("not a valid time object " + fvv.Kind().String())
+}
+
 func (q *Queryable) Int() int {
 	v, _ := q.IntT()
 	return v
@@ -225,5 +246,10 @@ func (q *Queryable) Bool() bool {
 
 func (q *Queryable) String() string {
 	v, _ := q.StringT()
+	return v
+}
+
+func (q *Queryable) Time() time.Time {
+	v, _ := q.TimeT()
 	return v
 }
